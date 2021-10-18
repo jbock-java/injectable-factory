@@ -90,7 +90,7 @@ final class FactoryWriter {
                 elements,
                 sourceVersion,
                 AutoFactoryProcessor.class,
-                "https://github.com/google/auto/tree/master/factory")
+                "https://github.com/jbock-java/injectable-factory")
                 .ifPresent(factory::addAnnotation);
         if (!descriptor.allowSubclasses()) {
             factory.addModifiers(FINAL);

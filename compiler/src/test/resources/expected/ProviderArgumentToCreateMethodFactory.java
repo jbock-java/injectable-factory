@@ -21,7 +21,7 @@ import javax.annotation.processing.Generated;
 
 @Generated(
     value = "com.google.auto.factory.processor.AutoFactoryProcessor",
-    comments = "https://github.com/google/auto/tree/master/factory"
+    comments = "https://github.com/jbock-java/injectable-factory"
     )
 final class ProviderArgumentToCreateMethodFactory
     implements ProviderArgumentToCreateMethod.CustomCreator {

@@ -82,7 +82,7 @@ publishing {
                 name = 'injectable-factory'
                 packaging = 'jar'
                 description = 'an AutoFactory clone that uses jakarta annotations'
-                url = 'https://github.com/jbock-java/auto-factory'
+                url = 'https://github.com/jbock-java/injectable-factory'
 
                 licenses {
                     license {
