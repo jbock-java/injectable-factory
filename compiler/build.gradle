@@ -44,6 +44,8 @@ shadowJar {
     archiveClassifier.set('')
     relocate('com.squareup.javapoet', 'injectable.factory.shaded.com.squareup.javapoet')
     relocate('com.google.auto.common', 'injectable.factory.shaded.com.google.auto.common')
+    relocate('com.google.common', 'injectable.factory.shaded.com.google.common')
+    relocate('org.checkerframework', 'injectable.factory.shaded.org.checkerframework')
 }
 
 dependencies {
