@@ -1,0 +1,159 @@
+plugins {
+    id('java')
+    id('net.ltgt.errorprone') version('2.0.2')
+    id('com.github.johnrengelman.shadow') version('6.1.0')
+    id('maven-publish')
+    id('signing')
+}
+
+group = 'io.github.jbock-java'
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(16))
+    }
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+    sourceCompatibility = '11'
+    targetCompatibility = '11'
+    options.compilerArgs << '--release'
+    options.compilerArgs << '11'
+}
+
+javadoc {
+    options.encoding = 'UTF-8'
+}
+
+repositories {
+    mavenCentral()
+}
+
+tasks.named('compileTestJava').configure { it ->
+    it.options.errorprone.enabled = false
+}
+
+tasks.named('compileJava').configure { it ->
+    it.options.errorprone.excludedPaths = '.*[/\\\\]generated[/\\\\].*'
+}
+
+tasks.withType(AbstractArchiveTask) {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+tasks.withType(GenerateModuleMetadata) {
+    enabled = true
+}
+
+shadowJar {
+    minimize()
+    archiveClassifier.set('')
+    relocate('com.squareup.javapoet', 'injectable.factory.shaded.com.squareup.javapoet')
+    relocate('org.checkerframework', 'injectable.factory.shaded.org.checkerframework')
+}
+
+dependencies {
+    def core = project(':core')
+    implementation('com.squareup:javapoet:1.13.0')
+    implementation('com.google.auto:auto-common:1.2')
+    implementation('com.google.googlejavaformat:google-java-format:1.11.0')
+    shadow(core)
+    shadow('com.google.auto.value:auto-value-annotations:1.8.2')
+    annotationProcessor('com.google.auto.value:auto-value:1.8.2')
+    implementation('org.checkerframework:checker-compat-qual:2.5.5')
+    annotationProcessor('org.checkerframework:checker:3.18.1')
+    testImplementation(core)
+    testImplementation('com.google.testing.compile:compile-testing:0.19')
+    testImplementation('org.junit.jupiter:junit-jupiter:5.8.1')
+    testImplementation('org.junit.vintage:junit-vintage-engine:5.8.1')
+    errorprone('com.google.errorprone:error_prone_core:2.9.0')
+}
+
+jar {
+    manifest {
+        attributes(
+                'Automatic-Module-Name': 'dagger.compiler',
+                'Implementation-Version': project.properties['version']
+        )
+    }
+}
+
+test {
+    useJUnitPlatform()
+    jvmArgs = ['--add-opens', 'jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED']
+    testLogging {
+        events('failed')
+    }
+}
+
+task javadocJar(type: Jar) {
+    from javadoc
+    archiveClassifier.set('javadoc')
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier.set('sources')
+}
+
+artifacts {
+    archives(javadocJar, sourcesJar)
+}
+
+// https://central.sonatype.org/pages/gradle.html
+publishing {
+    publications {
+        mavenJava(MavenPublication) { publication ->
+            project.shadow.component(publication)
+            artifactId = 'injectable-factory-compiler'
+
+            artifact sourcesJar
+            artifact javadocJar
+
+            pom {
+                name = 'injectable-factory-compiler'
+                packaging = 'jar'
+                description = 'an AutoFactory clone that uses jakarta annotations'
+                url = 'https://github.com/jbock-java/injectable-factory'
+
+                licenses {
+                    license {
+                        name = 'Apache 2.0'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'Various'
+                        name = 'Various'
+                        email = 'jbock-java@gmx.de'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/jbock-java/injectable-factory.git'
+                    developerConnection = 'scm:git:https://github.com/jbock-java/injectable-factory.git'
+                    url = 'https://github.com/jbock-java/injectable-factory'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            url = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+            credentials {
+                username = System.getenv('OSS_USER')
+                password = System.getenv('OSS_PASS')
+            }
+        }
+    }
+}
+
+// https://docs.gradle.org/current/userguide/signing_plugin.html
+signing {
+    def signingKey = findProperty('signingKey')
+    def signingPassword = findProperty('signingPassword')
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
+}
